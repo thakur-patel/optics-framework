@@ -27,20 +27,19 @@ sse-starlette = "^2.2.1"
 fastapi = "^0.115.12"
 
 [tool.poetry.group.dev.dependencies]
-black = "25.1.0"
 tox = "~4.24.1"
 pytest = "~8.3.4"
 pytest-cov = "~6.0.0"
-pylint = "~3.3.4"
 pandas = ">=2.0.0,<3.0.0"
+commitizen = "^4.4.1"
+pre-commit = "^4.2.0"
+ruff = "^0.11.2"
+bandit = "^1.8.3"
 
 [tool.poetry.group.test.dependencies]
 pytest = "~8.3.4"
 pytest-cov = "~6.0.0"
 pytest-mock = "~3.14.0"
-
-[tool.poetry.group.lint.dependencies]
-pylint = "~3.3.4"
 
 [tool.poetry.group.docs.dependencies]
 sphinx = ">=8.2.0,<9.0.0"
