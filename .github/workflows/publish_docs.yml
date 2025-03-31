@@ -1,0 +1,49 @@
+name: Build-sphinx-docs
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH  # Ensure Poetry is in PATH
+
+      - name: Configure Poetry to use Python 3.12
+        run: poetry env use python3.12
+
+      - name: Ensure poetry.lock exists
+        run: |
+          if [ ! -f poetry.lock ]; then
+            poetry lock
+          fi
+
+      - name: Install dependencies (including `optics_framework`)
+        run: poetry install --no-interaction --with docs  # Installs both package and docs dependencies
+
+      - name: Install ghp-import
+        run: poetry add --group docs ghp-import  # Ensures it's available inside the venv
+
+      - name: Build HTML with Sphinx
+        run: |
+          poetry run make -C docs html  # Uses Poetry's virtual env
+
+      - name: Deploy to GitHub Pages
+        run: |
+          poetry run ghp-import -n -p -f docs/build/html  # Runs inside Poetry's venv
