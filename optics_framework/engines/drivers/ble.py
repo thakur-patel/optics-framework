@@ -1,0 +1,20 @@
+from optics_framework.common.driver_interface import DriverInterface
+from optics_framework.common.logging_config import logger, apply_logger_format_to_all
+
+
+@apply_logger_format_to_all("internal")
+class BLEDriver(DriverInterface):
+    """
+    BLE-based implementation of the :class:`DriverInterface`.
+
+    This driver facilitates launching applications via BLE communication.
+    """
+
+    def launch_app(self, event_name: str) -> None:
+        """
+        Launch an application using BLE.
+
+        :param event_name: The event triggering the app launch.
+        :type event_name: str
+        """
+        logger.debug("Launching the BLE application.")

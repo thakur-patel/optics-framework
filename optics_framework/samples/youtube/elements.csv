@@ -1,0 +1,12 @@
+Element_Name,Element_ID
+Subscriptions_xpath,   //android.widget.TextView[@resource-id="com.google.android.youtube:id/text" and @text="Subscriptions"]
+you_xpath,             (//android.widget.ImageView[@resource-id="com.google.android.youtube:id/image"])[4]
+Home_xpath,            //android.widget.TextView[@resource-id="com.google.android.youtube:id/text" and @text="Home"]
+Subscriptions_text,    Subscriptions
+you_text,              Library
+Home_text,             Home
+Subscriptions_image,           sub.jpeg
+Youtube_image,             youtube.jpeg
+Home_image,                home.png
+METHOD,None
+List,"[""xpath"",""text"",""images""]"

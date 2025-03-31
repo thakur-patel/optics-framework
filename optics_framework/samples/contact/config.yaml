@@ -1,0 +1,35 @@
+driver_sources:
+  - appium:
+      enabled: true
+      url: "http://localhost:4723"
+      capabilities:
+        app_param:
+        appActivity: com.android.contacts.activities.PeopleActivity
+        appPackage: com.google.android.contacts
+        automationName: UiAutomator2
+        deviceName: emulator-5554
+        platformName: Android
+  - ble:
+      enabled: false
+
+elements_sources:
+  - appium_find_element:
+      enabled: true
+  - appium_page_source:
+      enabled: false
+  - device_screenshot:
+      enabled: false
+  - webcam_screenshot:
+      enabled: false
+
+text_detection:
+  - easyocr:
+      enabled: false
+  - pytesseract:
+      enabled: false
+  - google_vision:
+      enabled: false
+
+image_detection:
+  - templatematch:
+      enabled: false

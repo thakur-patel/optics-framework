@@ -1,0 +1,19 @@
+module_name,module_step,param_1,param_2,param_3,param_4,param_5
+Launching App using text,Launch App,,,,
+Launching App using text,Press Element,//android.widget.Button[@resource-id="com.android.permissioncontroller:id/permission_allow_button"],,,
+
+Interact using text,Assert Presence,${Subscriptions_text},,,
+Interact using text,Press Element,${Subscriptions_text},,,
+Interact using text,Press Element,${Home_text},,,
+
+Interact using xpath,Assert Presence,${Subscriptions_xpath},,,
+Interact using xpath,Press Element,${Subscriptions_xpath},,,
+Interact using xpath,Press Element,${Home_xpath},,,
+
+Interact using images,Press Element,${Subscriptions_image},,,
+Interact using images,Press Element,${Home_image},,,
+
+
+Dynamic Launch,condition,${METHOD} == 'text',Interact using text,${METHOD} == 'xpath',Interact using xpath,Interact using images
+
+Repeat Test,Run Loop,Dynamic Launch,${METHOD},${List}
