@@ -2,7 +2,7 @@ from functools import wraps
 from typing import Callable
 from optics_framework.common.logging_config import logger, apply_logger_format_to_all
 from optics_framework.common.optics_builder import OpticsBuilder
-from optics_framework.common.strategies import StrategyManager, LocateResult
+from optics_framework.common.strategies import StrategyManager
 from optics_framework.common import utils
 from .verifier import Verifier
 import time

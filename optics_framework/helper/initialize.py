@@ -1,6 +1,6 @@
 import os
 import shutil
-import subprocess
+import subprocess # nosec
 import yaml
 import pathlib
 from optics_framework.common.config_handler import ConfigHandler
@@ -40,7 +40,7 @@ def _create_config_file(project_path: str) -> None:
     """Create config.yaml with default values from ConfigHandler."""
     config_path = os.path.join(project_path, "config.yaml")
     with open(config_path, "w", encoding="utf-8") as f:
-        yaml.dump(ConfigHandler.DEFAULT_CONFIG_VALUES,
+        yaml.dump(ConfigHandler.DEFAULT_GLOBAL_CONFIG,
                   f, default_flow_style=False)
     print("Created config.yaml with default values.")
 
@@ -62,16 +62,6 @@ def _copy_template(project_path: str, template: str) -> None:
         else:
             shutil.copy2(src_item, dest_item)
     print(f"Copied template '{template}' files into the project.")
-
-
-def _init_git_repository(project_path: str) -> None:
-    """Initialize a Git repository in the project directory."""
-    try:
-        subprocess.run(["git", "init"], cwd=project_path, check=True)
-        print("Initialized empty git repository.")
-    except subprocess.CalledProcessError as e:
-        print(f"Error initializing git repository: {e}")
-
 
 def create_project(args):
     """
@@ -102,5 +92,14 @@ def create_project(args):
     _create_config_file(project_path)
     if args.template:
         _copy_template(project_path, args.template)
-    if args.git_init:
-        _init_git_repository(project_path)
+    if args.git_init:  # Check if git_init flag is set
+        try:
+
+            git_path = shutil.which("git")  # Get the absolute path of Git
+            if git_path:
+                subprocess.run([git_path, "init"], cwd=project_path,               #nosec B603
+                            check=True, shell=False)
+        except FileNotFoundError:
+            print("Error: Git not found!")
+        except subprocess.CalledProcessError as e:
+            print(f"Error initializing git repository: {e}")

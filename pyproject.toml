@@ -25,6 +25,7 @@ pytesseract = "^0.3.13"
 google-cloud-vision = "^3.10.0"
 sse-starlette = "^2.2.1"
 fastapi = "^0.115.12"
+requests = "^2.32.3"
 
 [tool.poetry.group.dev.dependencies]
 tox = "~4.24.1"

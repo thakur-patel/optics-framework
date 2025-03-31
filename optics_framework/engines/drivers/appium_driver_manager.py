@@ -1,5 +1,3 @@
-from appium import webdriver
-from optics_framework.common.logging_config import logger
 # Global variable to store the Appium driver instance
 _driver = None
 

@@ -45,5 +45,3 @@ class ElementSourceFactory(GenericFactory[ElementSourceInterface]):
 
 
 ElementSourceFactory.discover_elementsources()
-
-

@@ -1,9 +1,9 @@
 import re
 from typing import Optional, Any, List, Union, Tuple
-import pandas as pd
 import os
 import json
-import requests  # Added missing import
+import requests
+import csv
 from optics_framework.common.logging_config import logger
 from optics_framework.common.runner.test_runnner import TestRunner
 import ast
@@ -190,7 +190,7 @@ class FlowControl:
     def _is_condition_true(self, cond: str) -> bool:
         try:
             resolved_cond = self._resolve_condition(cond)
-            return bool(eval(resolved_cond))
+            return bool(self._safe_eval(resolved_cond))
         except Exception as e:
             raise ValueError(f"Error evaluating condition '{cond}': {e}")
 
@@ -235,23 +235,29 @@ class FlowControl:
 
         # API call
         elif file_path.lower().startswith("http"):
-            response = requests.get(file_path)
-            if response.status_code != 200:
-                raise ValueError(f"Failed to fetch data from API: {file_path}")
-            json_data = response.json()
+            try:
+                response = requests.get(file_path, timeout=(5, 30))
+                if response.status_code != 200:
+                    raise ValueError(
+                        f"Failed to fetch data from API: {file_path}")
+                json_data = response.json()
 
-            if not isinstance(json_data, list):
-                raise ValueError("API response must be a JSON list.")
+                if not isinstance(json_data, list):
+                    raise ValueError("API response must be a JSON list.")
 
-            if not isinstance(index, str):
-                raise ValueError(
-                    "For API data, 'index' must be a string (JSON key).")
+                if not isinstance(index, str):
+                    raise ValueError(
+                        "For API data, 'index' must be a string (JSON key).")
 
-            extracted_data = [item[index]
-                              for item in json_data if index in item]
-            return extracted_data
+                extracted_data = [item[index]
+                                  for item in json_data if index in item]
+                return extracted_data
+            except requests.Timeout:
+                raise ValueError(f"Request to {file_path} timed out.")
+            except requests.RequestException as e:
+                raise ValueError(f"Failed to fetch data from {file_path}: {e}")
 
-        # File input
+        # File input (only CSV supported)
         else:
             if not os.path.exists(file_path):
                 raise FileNotFoundError(f"File '{file_path}' not found.")
@@ -259,27 +265,31 @@ class FlowControl:
             file_extension = os.path.splitext(file_path)[-1].lower()
 
             if file_extension == '.csv':
-                data = pd.read_csv(file_path)
-            elif file_extension in ['.xls', '.xlsx']:
-                data = pd.read_excel(file_path)
+                with open(file_path, newline='') as csvfile:
+                    reader = csv.reader(csvfile)
+                    data = list(reader)
+                    if not data:
+                        raise ValueError(f"CSV file '{file_path}' is empty.")
+                    # Assume first row is headers if index is a string
+                    if isinstance(index, str):
+                        headers = data[0]
+                        if index not in headers:
+                            raise ValueError(
+                                f"Column '{index}' not found in CSV file.")
+                        col_idx = headers.index(index)
+                        return [row[col_idx] for row in data[1:] if row[col_idx]]
+                    elif isinstance(index, int):
+                        if index >= len(data[0]):
+                            raise IndexError("Index out of range.")
+                        return [row[index] for row in data[1:] if row[index]]
+                    elif index is None:
+                        return [row[0] for row in data[1:] if row[0]]
+                    else:
+                        raise ValueError(
+                            "Index must be a string (column name) or an integer (column index).")
             else:
                 raise ValueError(
-                    "Unsupported file format. Use CSV, Excel, or JSON.")
-
-            # CSV/Excel: Use column name or index
-            if isinstance(index, str):  # Column name
-                if index not in data.columns:
-                    raise ValueError(f"Column '{index}' not found in file.")
-                return data[index].dropna().tolist()
-            elif isinstance(index, int):  # Column index
-                if index >= len(data.columns):
-                    raise IndexError("Index out of range.")
-                return data.iloc[:, index].dropna().tolist()
-            elif index is None:
-                return data.iloc[:, 0].dropna().tolist()
-            else:
-                raise ValueError(
-                    "Index must be a string (column name) or an integer (column index).")
+                    "Unsupported file format. Use CSV or provide a list/URL.")
 
     @raw_params(0)
     def evaluate(self, param1: str, param2: str):
@@ -307,7 +317,7 @@ class FlowControl:
         param2_resolved = re.sub(r"\$\{([^}]+)\}", replace_var, param2)
         return self._safe_eval(param2_resolved)
 
-    def _safe_eval(self, expression: str):
+    def _safe_eval(self, expression: str) -> Any:
         try:
             node = ast.parse(expression, mode='eval')
             allowed_nodes = (ast.Expression, ast.BinOp, ast.UnaryOp, ast.BoolOp, ast.Compare,
@@ -320,7 +330,7 @@ class FlowControl:
                 if not isinstance(node, allowed_nodes) and not isinstance(node, allowed_operators):
                     raise ValueError(
                         f"Unsafe expression detected: {expression}")
-            return eval(expression, {"__builtins__": None}, {})
+            return eval(expression, {"__builtins__": None}, {}) # nosec
         except Exception as e:
             raise ValueError(
                 f"Error evaluating expression '{expression}': {e}")

@@ -1,6 +1,6 @@
 import os
 import yaml
-from typing import List, Dict, Any, Optional, Union
+from typing import List, Dict, Any, Optional
 from dataclasses import dataclass, asdict, field
 from collections.abc import Mapping
 import logging

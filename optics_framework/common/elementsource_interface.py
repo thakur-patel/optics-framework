@@ -15,7 +15,7 @@ class ElementSourceInterface(ABC):
 
         :return: None
         :rtype: None
-        """ 
+        """
 
 
     @abstractmethod

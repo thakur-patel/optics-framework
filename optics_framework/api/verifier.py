@@ -1,10 +1,7 @@
 from optics_framework.common.logging_config import logger, apply_logger_format_to_all
 from optics_framework.common import utils
 from optics_framework.common.optics_builder import OpticsBuilder
-from datetime import datetime
 import time
-import cv2
-from typing import Union, List, Dict
 
 @apply_logger_format_to_all("internal")
 class Verifier:
@@ -75,7 +72,7 @@ class Verifier:
         :type event_name: str
         """
         pass
-    
+
     def vision_search(self, elements: list[str], timeout: int, rule: str) -> bool:
         """
         Vision based search for elements
@@ -96,7 +93,7 @@ class Verifier:
         start_time = time.time()
 
         while (time.time() - start_time) < timeout:
-            
+
             # Capture a screenshot
             timestamp = utils.get_current_time_for_events() # Get timestamp when the screenshot is taken
             frame = self.element_source.capture()
@@ -135,7 +132,7 @@ class Verifier:
     def assert_texts_vision(self, frame, texts, element_status, rule):
         """
         Searches for the given texts in a single frame using OCR.
-        
+
         Args:
             frame (numpy.ndarray): The image frame to search in.
             texts (list): List of text elements to search for.
@@ -149,7 +146,7 @@ class Verifier:
             if element_status['texts'][text]['found']:
                 continue  # Skip if already found
             found, _, bbox = self.text_detection.find_element(frame, text)
-            
+
             if found:
                 if not element_status['texts'][text]['found']:
                     element_status['texts'][text] = {'found': True, 'bbox': bbox}
@@ -170,7 +167,7 @@ class Verifier:
     def assert_images_vision(self, frame, images, element_status, rule):
         """
         Searches for the given images in a single frame using template matching.
-        
+
         Args:
             frame (numpy.ndarray): The image frame to search in.
             images (list): List of image templates to search for.
@@ -244,7 +241,7 @@ class Verifier:
             pass
 
         return result
-    
+
     def validate_screen(self, elements, timeout=30, rule='any', event_name=None) -> None:
         """
         Verifies the specified screen.
@@ -259,4 +256,3 @@ class Verifier:
         :type event_name: str
         """
         self.assert_presence(elements, timeout, rule, event_name)
-

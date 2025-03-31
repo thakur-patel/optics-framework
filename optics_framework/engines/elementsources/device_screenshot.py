@@ -64,7 +64,7 @@ class DeviceScreenshot(ElementSourceInterface):
             numpy_image = np.frombuffer(screenshot_bytes, np.uint8)
             numpy_image = cv2.imdecode(numpy_image, cv2.IMREAD_COLOR)
             return numpy_image
-        
+
         except ScreenshotException as se:
             # logger.debug(f'ScreenshotException: {se}. Using external camera')
             logger.warning(f'ScreenshotException : {se}. Using external camera.')
@@ -76,14 +76,13 @@ class DeviceScreenshot(ElementSourceInterface):
 
     def assert_elements(self, elements):
         return super().assert_elements(elements)
-    
+
 
     def locate(self, image: np.ndarray, template: np.ndarray) -> Optional[tuple]:
         logger.exception("CameraScreenshot does not support locating elements.")
         raise NotImplementedError("CameraScreenshot does not support locating elements.")
-        
+
 
     def locate_using_index(self, element, index):
         logger.exception("CameraScreenshot does not support locating elements using index.")
         raise NotImplementedError("CameraScreenshot does not support locating elements using index.")
-        

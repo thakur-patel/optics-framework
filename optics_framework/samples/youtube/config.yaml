@@ -34,7 +34,7 @@ elements_sources:
 text_detection:
   - easyocr:
       enabled: true
-      url: null 
+      url: null
       capabilities: {}
   - pytesseract:
       enabled: false
@@ -48,5 +48,5 @@ text_detection:
 image_detection:
   - templatematch:
       enabled: true
-      url: null  
+      url: null
       capabilities: {}

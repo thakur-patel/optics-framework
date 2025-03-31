@@ -112,7 +112,7 @@ class GoogleVisionHelper(TextInterface):
                 return True, (center_x, center_y), bbox, frame
 
         return False, (None, None),bbox, frame
-    
+
 
     def element_exist(self, input_data, reference_data):
         return super().element_exist(input_data, reference_data)

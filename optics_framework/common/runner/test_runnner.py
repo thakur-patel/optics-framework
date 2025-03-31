@@ -1,7 +1,7 @@
 import time
 import shutil
 import abc
-from typing import Any, Callable, Dict, List, Optional, Tuple, TypedDict, Union
+from typing import Callable, Dict, List, Optional, Tuple, TypedDict, Union
 from optics_framework.common.logging_config import logger, apply_logger_format_to_all, HierarchicalJsonHandler
 from rich.live import Live
 from rich.tree import Tree

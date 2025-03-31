@@ -105,7 +105,7 @@ class HierarchicalJsonHandler(logging.Handler):
             self.logs[test_case].setdefault(test_module, {})
             self.logs[test_case][test_module].setdefault(
                 keyword, []).append(log_entry)
-        except Exception as e:
+        except Exception:
             self.handleError(record)
 
     def flush(self):

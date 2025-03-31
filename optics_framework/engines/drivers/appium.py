@@ -1,5 +1,5 @@
 import logging
-import subprocess
+import subprocess # nosec
 from typing import Any, Dict, Optional
 from appium import webdriver
 from appium.options.android.uiautomator2.base import UiAutomator2Options
@@ -25,7 +25,7 @@ class Appium(DriverInterface):
         if cls._instance is None:
             cls._instance = super(Appium, cls).__new__(cls)
         return cls._instance
-    
+
     def __init__(self):
         if hasattr(self, "initialized") and self.initialized:
             return
@@ -35,7 +35,7 @@ class Appium(DriverInterface):
 
         if not config:
             logger.error(f"No configuration found for {self.DEPENDENCY_TYPE}: {self.NAME}")
-            raise ValueError(f"Appium driver not enabled in config")
+            raise ValueError("Appium driver not enabled in config")
 
         self.appium_server_url: str = config.get("url", "http://127.0.0.1:4723")
         self.capabilities: Dict[str, Any] = config.get("capabilities", {})
@@ -64,7 +64,7 @@ class Appium(DriverInterface):
         if platform.lower() == "android":
             if not app_package or not app_activity:
                 raise ValueError("Android requires 'app_package' and 'app_activity'.")
-            
+
             options = UiAutomator2Options()
             options.platform_name = platform
             options.device_name = device_serial
@@ -84,7 +84,7 @@ class Appium(DriverInterface):
         elif platform.lower() == "ios":
             if not app_package:
                 raise ValueError("iOS requires a valid 'app' path.")
-            
+
             options = XCUITestOptions()
             options.platform_name = platform
             options.device_name = device_serial
@@ -123,11 +123,11 @@ class Appium(DriverInterface):
         app_package = self.app_details.get('appPackage')
         if not app_package:
             raise ValueError("Missing required capability: appPackage")
-        
+
         command = f"adb shell dumpsys package {app_package} | grep versionName"
         try:
             # Run the adb command and capture the output.
-            output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT, text=True)
+            output = subprocess.check_output(command, shell=False, stderr=subprocess.STDOUT, text=True) # nosec B603
             # Process the output to find the line containing "versionName"
             for line in output.splitlines():
                 if "versionName=" in line:
@@ -151,7 +151,7 @@ class Appium(DriverInterface):
     def get_driver(self):
         """Return the Appium driver instance."""
         return self.driver
-    
+
 # APPIUM api wrappers
     def click_element(self, element, event_name=None):
         """
@@ -230,7 +230,7 @@ class Appium(DriverInterface):
             end_y = start_y
             end_x = start_x + swipe_length if direction == "right" else start_x - swipe_length
         self.swipe(start_x, start_y, end_x, end_y, 1000)
-        
+
     def scroll(self, direction, duration=1000, even_name=None):
         window_size = self.driver.get_window_size()
         width = window_size['width']
@@ -305,7 +305,7 @@ class Appium(DriverInterface):
         text = element.get_attribute('text') or element.get_attribute('value')
         logger.info(f"Text of element: {text}")
         return text
-    
+
 # helper functions
     def pixel_2_appium(self, x, y, screenshot):
         if not x or not y:
@@ -320,8 +320,8 @@ class Appium(DriverInterface):
         scaled_y = int(y * screen_height / screenshot_height)
         logger.debug(f'scaled values : {scaled_x, scaled_y}')
         return scaled_x, scaled_y
-     
-# action keywords    
+
+# action keywords
 
     def press_element(self, element,repeat, event_name=None):
         for _ in range(repeat):
@@ -374,4 +374,3 @@ class Appium(DriverInterface):
             return self.driver.find_element(AppiumBy.XPATH, element)
         elif element_type == 'Text':
             return self.driver.find_element(AppiumBy.ACCESSIBILITY_ID, element)
-

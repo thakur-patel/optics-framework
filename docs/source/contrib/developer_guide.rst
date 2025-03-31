@@ -3,7 +3,7 @@ Developer Guide
 
 This section provides guidelines for developers who want to contribute to the Optics Framework.
 
-Note: Before contributing, please read our `Contributing Guidelines <contributing_guidelines>` to understand the contribution process. 
+Note: Before contributing, please read our `Contributing Guidelines <contributing_guidelines>` to understand the contribution process.
 
 1. Setting Up the Development Environment
 -----------------------------------------
@@ -102,4 +102,3 @@ For Live Changes while working on documentation:
 3. Commit Changes
 
 - Adhere to the `Conventional Commits <https://www.conventionalcommits.org/en/v1.0.0/>`_ format for your commit messages.
-

@@ -10,7 +10,7 @@ from optics_framework.common.config_handler import ConfigHandler
 from optics_framework.engines.elementsources.device_screenshot import DeviceScreenshot
 from optics_framework.engines.elementsources.camera_screenshot import CameraScreenshot
 
-    
+
 
 def determine_element_type(element):
     # Check if the input is an Image path
@@ -35,7 +35,7 @@ def get_current_time_for_events():
         return None
 
 
-    
+
 def compute_hash(xml_string):
     """Computes the SHA-256 hash of the XML string."""
     return hashlib.sha256(xml_string.encode('utf-8')).hexdigest()

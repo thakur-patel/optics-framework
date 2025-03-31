@@ -27,7 +27,7 @@ Use the following command to initialize a new project:
 .. code-block:: bash
 
    optics init --name <project_name> --path <directory> \
-                  --template <sample_name> --git-init 
+                  --template <sample_name> --git-init
 
 **Options:**
 
@@ -71,7 +71,7 @@ Executing Dry Run
 --------------------------
 Execute a dry run of all test cases:
 
-.. code-block:: bash 
+.. code-block:: bash
 
    optics dry_run <project_path>
 

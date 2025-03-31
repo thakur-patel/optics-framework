@@ -2,7 +2,7 @@ from typing import Union, List
 from optics_framework.common.image_interface import ImageInterface
 from optics_framework.common.base_factory import GenericFactory
 
-    
+
 class ImageFactory(GenericFactory[ImageInterface]):
     """
     Factory class for managing image processing engines.
@@ -30,7 +30,7 @@ class ImageFactory(GenericFactory[ImageInterface]):
         :rtype: None
         """
         cls.discover(package)
-        
+
     @classmethod
     def get_driver(cls, name: Union[str, List[Union[str, dict]], None]) -> ImageInterface:
         """

@@ -50,7 +50,7 @@ class TemplateMatchingHelper(ImageInterface):
         boxes = [(x, y, x + w, y + h) for y, x in zip(*locations)]
 
         return boxes
-    
+
     def load_template(self, element: str) -> np.ndarray:
         """
         Load a template image from the input_templates folder.
@@ -266,7 +266,7 @@ class TemplateMatchingHelper(ImageInterface):
 
                 # Draw a small circle at the center
                 cv2.circle(frame, (center_x, center_y), 5, (0, 0, 255), -1)
-        
+
         # Return the requested index
         if 0 <= index < len(centers):
             return True, centers[index], frame

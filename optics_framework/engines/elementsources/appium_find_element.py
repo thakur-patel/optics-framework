@@ -60,7 +60,7 @@ class AppiumFindElement(ElementSourceInterface):
         self.tree = etree.ElementTree(etree.fromstring(page_source.encode('utf-8')))
         self.root = self.tree.getroot()
         return page_source
-    
+
 
     def locate(self, element: str):
         """
@@ -120,7 +120,7 @@ class AppiumFindElement(ElementSourceInterface):
             raise ValueError("Invalid rule. Use 'any' or 'all'.")
 
         start_time = time.time()
-        
+
         while time.time() - start_time < timeout:
             found_elements = [self.locate(element) for element in elements]
 

@@ -85,7 +85,7 @@ class PytesseractHelper(TextInterface):
         annotated_frame = utils.annotate_element(frame, coor, bbox)
         utils.save_screenshot(annotated_frame, name='annotated_frame')
         return coor
-        
+
     def locate_using_index(self, frame, text, index):
         result, coor, bbox = self.find_element_index(frame, text, index)
         if not result:
@@ -95,7 +95,7 @@ class PytesseractHelper(TextInterface):
         annotated_frame = utils.annotate_element(frame, coor, bbox)
         utils.save_screenshot(annotated_frame, name='annotated_frame')
         return coor
-    
+
     def find_element(self, frame, text):
         """
         Locate a specific text in the given frame using OCR and return the center coordinates.

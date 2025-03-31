@@ -1,4 +1,4 @@
-from typing import Union, List, Dict, Optional, Type, TypeVar, Callable
+from typing import Union, List, Dict, Optional, Type, TypeVar
 from optics_framework.common.driver_factory import DeviceFactory
 from optics_framework.common.elementsource_factory import ElementSourceFactory
 from optics_framework.common.image_factory import ImageFactory
@@ -60,7 +60,7 @@ class OpticsBuilder:
     def build(self, cls: Type[T]) -> T:
         """
         Build an instance of the specified class using the stored configurations.
-        
+
         :param cls: The class to instantiate (e.g., ActionKeyword, AppManagement, Verifier).
         :return: An instance of the specified class.
         :raises ValueError: If required configurations are missing for the specified class.

@@ -32,7 +32,7 @@ class DriverInterface(ABC):
         """
         pass
 
-    
+
     @abstractmethod
     def press_coordinates(self,coor_x, coor_y, event_name) -> None:
         """
@@ -73,7 +73,7 @@ class DriverInterface(ABC):
         :rtype: None
         """
         pass
-    
+
     @abstractmethod
     def enter_text(self, text, event_name) -> None:
         """
@@ -204,7 +204,7 @@ class DriverInterface(ABC):
         :rtype: None
         """
         pass
-    
+
 
     @abstractmethod
     def get_text_element(self, element) -> str:

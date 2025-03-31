@@ -29,9 +29,9 @@ We welcome contributions in the form of bug reports, feature requests, documenta
 
 - **NOTE:** Ensure that your commit messages follow the `Conventional Commits <https://www.conventionalcommits.org/en/v1.0.0/>`_ format.
 - **NOTE:** Sign your commits using the `Developer Certificate of Origin (DCO) <https://developercertificate.org/>`_.
-  
+
 6. **Push Changes:** Push your changes to your forked remote repository.
-7. **Create a Pull Request:** Create a pull request from your forked repository to the main repository. 
+7. **Create a Pull Request:** Create a pull request from your forked repository to the main repository.
 
 - **NOTE:** If you are fixing an issue, reference the issue number in your PULL Request message using the format ``Fixes #<issue_number>``.
 
@@ -54,4 +54,3 @@ To report a bug, follow these steps:
 7. **Environment:** Details about your environment, such as the operating system, Python version, and any other relevant information.
 8. **Screenshots:** If applicable, include screenshots that help illustrate the bug.
 9. **Labels:** Add appropriate labels to the issue, such as ``bug`` or ``enhancement``.
-

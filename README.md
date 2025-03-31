@@ -53,7 +53,7 @@ pip install --index-url https://pypi.org/simple/ --extra-index-url https://test.
 ### 2 Create a New Test Project
 
 ```bash
-optics init --name my_test_project --path . --template youtube 
+optics init --name my_test_project --path . --template youtube
 ```
 
 ### 📌 Dry Run Test Cases
@@ -144,7 +144,7 @@ poetry install --with dev
 
 ```bash
 poetry install --with tests
-poetry run pytest 
+poetry run pytest
 ```
 
 ### Build Documentation
