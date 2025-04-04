@@ -26,8 +26,9 @@ jobs:
       - name: Get Changed Files
         id: changed-files
         run: |
-          git fetch origin ${{ github.base_ref }} --depth=1
-          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }} HEAD)
+          BASE_BRANCH=${{ github.base_ref || 'main' }}
+          git fetch origin $BASE_BRANCH --depth=1
+          CHANGED_FILES=$(git diff --name-only origin/$BASE_BRANCH HEAD)
           if [ -n "$CHANGED_FILES" ]; then
             echo "Found changed files: $CHANGED_FILES"
             echo "CHANGED_FILES=$CHANGED_FILES" >> $GITHUB_ENV
