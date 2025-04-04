@@ -13,7 +13,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Ensures we have the history for comparison
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -23,25 +23,26 @@ jobs:
       - name: Install Pre-Commit
         run: pip install pre-commit
 
-      - name: Get Changed Files
+      - name: Determine Changed Files or Full Scan
         id: changed-files
         run: |
-          BASE_BRANCH=${{ github.base_ref || 'main' }}
-          git fetch origin $BASE_BRANCH --depth=1
-          CHANGED_FILES=$(git diff --name-only origin/$BASE_BRANCH HEAD)
-          if [ -n "$CHANGED_FILES" ]; then
-            echo "Found changed files: $CHANGED_FILES"
-            echo "CHANGED_FILES=$CHANGED_FILES" >> $GITHUB_ENV
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "Running from workflow_dispatch. Scanning entire repo."
+            echo "CHANGED_FILES=$(git ls-files)" >> $GITHUB_ENV
           else
-            echo "No changed files detected"
-            echo "CHANGED_FILES=" >> $GITHUB_ENV
+            echo "Running from pull_request. Checking changed files only."
+            BASE_BRANCH=${{ github.base_ref }}
+            git fetch origin $BASE_BRANCH --depth=1
+            CHANGED_FILES=$(git diff --name-only origin/$BASE_BRANCH HEAD)
+            echo "CHANGED_FILES=$CHANGED_FILES" >> $GITHUB_ENV
           fi
 
-      - name: Run Pre-Commit Hooks on Changed Files
+      - name: Run Pre-Commit Hooks
         run: |
           if [ -n "${{ env.CHANGED_FILES }}" ]; then
-            echo "Running pre-commit on: ${{ env.CHANGED_FILES }}"
-            echo "${{ env.CHANGED_FILES }}" | tr '\n' '\0' | xargs -0 pre-commit run --files
+            echo "Running pre-commit on:"
+            echo "${{ env.CHANGED_FILES }}"
+            echo "${{ env.CHANGED_FILES }}" | tr ' ' '\n' | xargs pre-commit run --files
           else
             echo "No changed files to check."
           fi
