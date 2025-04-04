@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "optics-framework"
-version = "0.0.8"
+version = "0.0.10"
 description = "A flexible and modular test automation framework that can be used to automate any mobile application."
 authors = ["Lalitanand Dandge <lalit@mozark.ai>"]
 license = "Apache-2.0"
@@ -28,6 +28,7 @@ fastapi = "^0.115.12"
 requests = "^2.32.3"
 textual = "^3.0.0"
 selenium = "^4.30.0"
+pytest = "^8.3.5"
 
 [tool.poetry.group.dev.dependencies]
 tox = "~4.24.1"
