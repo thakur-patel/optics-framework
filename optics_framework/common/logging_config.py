@@ -56,7 +56,7 @@ class JUnitHandler(logging.Handler):
         self.filename = filename
         self.buffer = []
         self.buffer_size = buffer_size
-        self.lock = threading.RLock()  # Use RLock instead of Lock
+        self._lock: threading.RLock = threading.RLock()  # Use RLock instead of Lock
         self.testsuites = ET.Element("testsuites")
         self.suite_map = {}
         self.start_time = datetime.now()
@@ -66,7 +66,7 @@ class JUnitHandler(logging.Handler):
         try:
             print(
                 f"Attempting to acquire lock for {self.filename}", file=sys.stderr)
-            if not self.lock.acquire(timeout=2):  # Timeout after 2 seconds
+            if not self._lock.acquire(timeout=2):  # Timeout after 2 seconds
                 print(
                     f"Failed to acquire lock for {self.filename} within 2 seconds", file=sys.stderr)
                 return
@@ -90,7 +90,8 @@ class JUnitHandler(logging.Handler):
                     failure = ET.SubElement(testcase, "failure", {
                                             "message": record.getMessage(), "type": failure_type})
                     if record.exc_info:
-                        failure.text = self.formatter.formatException(
+                        formatter = self.formatter or logging.Formatter()
+                        failure.text = formatter.formatException(
                             record.exc_info)
                     suite.attrib["failures"] = str(
                         int(suite.attrib["failures"]) + 1)
@@ -103,13 +104,13 @@ class JUnitHandler(logging.Handler):
                 if len(self.buffer) >= self.buffer_size:
                     self.flush()
             finally:
-                self.lock.release()
+                self._lock.release()
         except Exception as e:
             print(
                 f"JUnitHandler emit error for {self.filename}: {e}", file=sys.stderr)
 
     def flush(self) -> None:
-        if not self.lock.acquire(timeout=2):
+        if not self._lock.acquire(timeout=2):
             print(
                 f"Failed to acquire lock for flush in {self.filename}", file=sys.stderr)
             return
@@ -130,7 +131,7 @@ class JUnitHandler(logging.Handler):
                     print(
                         f"JUnitHandler flush error for {self.filename}: {e}", file=sys.stderr)
         finally:
-            self.lock.release()
+            self._lock.release()
 
     def close(self) -> None:
         try:

@@ -51,6 +51,7 @@ class RunnerArgs(BaseModel):
     """Arguments for BaseRunner initialization."""
     folder_path: str
     test_name: str = ""
+    runner: str = "test_runner"
 
     @field_validator('folder_path')
     @classmethod
@@ -67,6 +68,12 @@ class RunnerArgs(BaseModel):
         """Strip whitespace from test_name."""
         return v.strip()
 
+    @field_validator('runner')
+    @classmethod
+    def strip_runner(cls, v: str) -> str:
+        """Strip whitespace from runner."""
+        return v.strip()
+
 
 class BaseRunner:
     """Base class for running test cases from CSV files using ExecutionEngine."""
@@ -74,6 +81,9 @@ class BaseRunner:
     def __init__(self, args: RunnerArgs):
         self.folder_path = args.folder_path
         self.test_name = args.test_name
+        self.runner = args.runner
+        # Added for debugging
+        internal_logger.debug(f"Using runner: {self.runner}")
 
         # Validate CSV files (test_cases and modules required, elements optional)
         test_cases_file, modules_file, elements_file = find_csv_files(
@@ -124,8 +134,9 @@ class BaseRunner:
                 test_cases=TestCaseData(test_cases=self.test_cases_data),
                 modules=ModuleData(modules=self.modules_data),
                 elements=ElementData(elements=self.elements_data),
-                runner_type="pytest"  # Default; could be configurable
+                runner_type=self.runner
             )
+            internal_logger.debug(f"Executing with runner_type: {self.runner}")
             await self.engine.execute(params)
         except Exception as e:
             internal_logger.error(f"{mode.capitalize()} failed: {e}")
@@ -138,7 +149,8 @@ class BaseRunner:
         try:
             self.manager.terminate_session(self.session_id)
         except Exception as e:
-            internal_logger.error(f"Failed to terminate session {self.session_id}: {e}")
+            internal_logger.error(
+                f"Failed to terminate session {self.session_id}: {e}")
 
 
 class ExecuteRunner(BaseRunner):
@@ -153,20 +165,22 @@ class DryRunRunner(BaseRunner):
         await self.run("dry_run")
 
 
-def execute_main(folder_path: str, test_name: str = ""):
+def execute_main(folder_path: str, test_name: str = "", runner: str = "test_runner"):
     """Entry point for execute command."""
-    args = RunnerArgs(folder_path=folder_path, test_name=test_name)
-    runner = ExecuteRunner(args)
-    asyncio.run(runner.execute())
+    args = RunnerArgs(folder_path=folder_path,
+                      test_name=test_name, runner=runner)
+    runner_instance = ExecuteRunner(args)
+    asyncio.run(runner_instance.execute())
 
 
-def dryrun_main(folder_path: str, test_name: str = ""):
+def dryrun_main(folder_path: str, test_name: str = "", runner: str = "test_runner"):
     """Entry point for dry run command."""
-    args = RunnerArgs(folder_path=folder_path, test_name=test_name)
-    runner = DryRunRunner(args)
-    asyncio.run(runner.execute())
+    args = RunnerArgs(folder_path=folder_path,
+                      test_name=test_name, runner=runner)
+    runner_instance = DryRunRunner(args)
+    asyncio.run(runner_instance.execute())
 
 
 if __name__ == "__main__":
-    folder_path = "/Users/dhruvmenon/Documents/optics-framework-1/optics_framework/samples/contact/"
-    execute_main(folder_path, "")
+    path = "/Users/dhruvmenon/Documents/optics-framework-1/optics_framework/samples/contact/"
+    execute_main(path, "")

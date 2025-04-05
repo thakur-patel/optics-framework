@@ -132,6 +132,7 @@ class DryRunArgs(BaseModel):
     """Arguments for the dry_run command."""
     folder_path: str
     test_name: str = ""
+    runner: str = "test_runner"
 
 
 class DryRunCommand(Command):
@@ -149,18 +150,29 @@ class DryRunCommand(Command):
             default="",
             help="Name of the test to execute. If not provided, all tests will run.",
         )
+        parser.add_argument(
+            "--runner",
+            type=str,
+            default="test_runner",
+            help="Test runner to use (default: test_runner)"
+        )
         parser.set_defaults(func=self.execute)
 
     def execute(self, args):
         dry_run_args = DryRunArgs(
-            folder_path=args.folder_path, test_name=args.test_name)
-        dryrun_main(dry_run_args.folder_path, dry_run_args.test_name)
+            folder_path=args.folder_path,
+            test_name=args.test_name,
+            runner=args.runner
+        )
+        dryrun_main(dry_run_args.folder_path,
+                    dry_run_args.test_name, dry_run_args.runner)
 
 
 class ExecuteArgs(BaseModel):
     """Arguments for the execute command."""
     folder_path: str
     test_name: str = ""
+    runner: str = "test_runner"
 
 
 class ExecuteCommand(Command):
@@ -178,12 +190,22 @@ class ExecuteCommand(Command):
             default="",
             help="Name of the test to execute. If not provided, all tests will run.",
         )
+        parser.add_argument(
+            "--runner",
+            type=str,
+            default="test_runner",
+            help="Test runner to use (default: test_runner)"
+        )
         parser.set_defaults(func=self.execute)
 
     def execute(self, args):
         execute_args = ExecuteArgs(
-            folder_path=args.folder_path, test_name=args.test_name)
-        execute_main(execute_args.folder_path, execute_args.test_name)
+            folder_path=args.folder_path,
+            test_name=args.test_name,
+            runner=args.runner
+        )
+        execute_main(execute_args.folder_path,
+                     execute_args.test_name, execute_args.runner)
 
 
 class VersionCommand(Command):
