@@ -124,7 +124,7 @@ class BaseRunner:
                 test_cases=TestCaseData(test_cases=self.test_cases_data),
                 modules=ModuleData(modules=self.modules_data),
                 elements=ElementData(elements=self.elements_data),
-                runner_type="test_runner"  # Default; could be configurable
+                runner_type="pytest"  # Default; could be configurable
             )
             await self.engine.execute(params)
         except Exception as e:

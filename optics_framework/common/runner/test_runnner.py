@@ -323,32 +323,59 @@ class PytestRunner(Runner):
             pytest.fail(f"Variable '{var_name}' not found")
         return self.elements[var_name]
 
-    def execute_test_case(self, test_case: str, dry_run: bool = False) -> dict:
-        extra = {"test_case": test_case}
+    def _execute_keyword(self, keyword: str, params: List[str]) -> bool:
+        func_name = "_".join(keyword.split()).lower()
+        method = self.keyword_map.get(func_name)
+        if not method:
+            pytest.fail(f"Keyword not found: {keyword}")
+        try:
+            resolved_params = [self.resolve_param(param) for param in params]
+            method(*resolved_params)
+            return True
+        except Exception as e:
+            pytest.fail(f"Keyword '{keyword}' failed: {e}")
+            return False
+
+    def _process_module(self, module_name: str) -> bool:
+        if module_name not in self.modules:
+            pytest.fail(f"Module '{module_name}' not found")
+        for keyword, params in self.modules[module_name]:
+            if not self._execute_keyword(keyword, params):
+                return False
+        return True
+
+    def execute_test_case(self, test_case: str, dry_run: bool = False) -> TestCaseResult:
+        start_time = time.time()
+        result = TestCaseResult(
+            name=test_case, elapsed="0.00s", status="NOT RUN")
         if test_case not in self.test_cases:
-            user_logger.error("Test case not found", extra=extra)
-            return {"name": test_case, "status": "FAIL", "elapsed": "0.00s", "message": "Test case not found"}
-        success = self._run_pytest([test_case], dry_run)
-        return {"name": test_case, "status": "PASS" if success else "FAIL", "elapsed": "0.00s", "modules": []}
+            result.status = "FAIL"
+            result.elapsed = f"{time.time() - start_time:.2f}s"
+            return result
+
+        result.status = "RUNNING"
+        for module_name in self.test_cases[test_case]:
+            if dry_run:
+                if module_name not in self.modules:
+                    result.status = "FAIL"
+                    break
+            else:
+                if not self._process_module(module_name):
+                    result.status = "FAIL"
+                    break
+        else:
+            result.status = "PASS"
+        result.elapsed = f"{time.time() - start_time:.2f}s"
+        return result
 
     def run_all(self) -> None:
-        if not self.test_cases:
-            self.result_printer.test_state = {}
-            return
-        success = self._run_pytest(list(self.test_cases.keys()))
-        self.result_printer.test_state = {tc: TestCaseResult(
-            name=tc, elapsed="0.00s", status="PASS" if success else "FAIL") for tc in self.test_cases}
+        self._run_pytest(list(self.test_cases.keys()))
 
-    def dry_run_test_case(self, test_case: str) -> dict:
+    def dry_run_test_case(self, test_case: str) -> TestCaseResult:
         return self.execute_test_case(test_case, dry_run=True)
 
     def dry_run_all(self) -> None:
-        if not self.test_cases:
-            self.result_printer.test_state = {}
-            return
-        success = self._run_pytest(list(self.test_cases.keys()), dry_run=True)
-        self.result_printer.test_state = {tc: TestCaseResult(
-            name=tc, elapsed="0.00s", status="PASS" if success else "FAIL") for tc in self.test_cases}
+        self._run_pytest(list(self.test_cases.keys()), dry_run=True)
 
     def _run_pytest(self, test_cases: List[str], dry_run: bool = False) -> bool:
         temp_dir = tempfile.mkdtemp()
@@ -362,32 +389,30 @@ class PytestRunner(Runner):
         with open(conftest_path, "w") as f:
             f.write("""
 import pytest
-from optics_framework.common.runners import PytestRunner
+from optics_framework.common.runner.test_runnner import PytestRunner
 
 @pytest.fixture
 def runner():
     return PytestRunner.instance
 """)
 
-        # Generate test file
         test_code = "".join(
-            f"def test_{tc.replace(' ', '_')}(runner):\n    runner.execute_test_case('{tc}', dry_run={dry_run})\n"
+            f"def test_{tc.replace(' ', '_')}(runner):\n"
+            f"    result = runner.execute_test_case('{tc}', dry_run={dry_run})\n"
+            f"    assert result.status == 'PASS', 'Test case failed with status: ' + result.status\n"
             for tc in test_cases
         )
+        internal_logger.debug(
+            f"Generated test code:\n{test_code}", extra=extra)
         with open(test_file_path, "w") as f:
             f.write(test_code)
 
-        # Clean up cached modules
         for module_name in list(sys.modules.keys()):
             if module_name.startswith("test_generated"):
                 del sys.modules[module_name]
 
-        # Define the path for the JUnit XML output
-        junit_path = f"{ConfigHandler.get_instance().get_project_path()
-                        }/execution_output/junit_output.xml"
-
-        # Run Pytest with JUnit XML output
+        junit_path = f"{ConfigHandler.get_instance().get_project_path()}/execution_output/junit_output.xml"
         result = pytest.main(
-            [temp_dir, '-q', '--disable-warnings', f'--junitxml={junit_path}'])
+            [temp_dir, '-q', '--disable-warnings', f'--junitxml={junit_path}', '--no-cov'])
         shutil.rmtree(temp_dir)
         return result == 0

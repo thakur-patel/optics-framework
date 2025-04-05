@@ -8,6 +8,7 @@ import xml.etree.ElementTree as ET  # For JUnit XML generation # nosec B405
 from datetime import datetime
 import atexit
 import sys
+import time
 
 from optics_framework.common.config_handler import ConfigHandler
 
@@ -55,34 +56,31 @@ class JUnitHandler(logging.Handler):
         self.filename = filename
         self.buffer = []
         self.buffer_size = buffer_size
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()  # Use RLock instead of Lock
         self.testsuites = ET.Element("testsuites")
         self.suite_map = {}
         self.start_time = datetime.now()
         self.formatter = logging.Formatter()
 
     def emit(self, record: logging.LogRecord) -> None:
-        if self.lock is None:
-            raise RuntimeError("Lock not initialized")
         try:
-            with self.lock:
+            print(
+                f"Attempting to acquire lock for {self.filename}", file=sys.stderr)
+            if not self.lock.acquire(timeout=2):  # Timeout after 2 seconds
+                print(
+                    f"Failed to acquire lock for {self.filename} within 2 seconds", file=sys.stderr)
+                return
+            try:
                 suite_key = getattr(record, "module", record.name)
                 if suite_key not in self.suite_map:
                     suite = ET.SubElement(self.testsuites, "testsuite", {
-                        "name": suite_key,
-                        "tests": "0",
-                        "failures": "0",
-                        "errors": "0",
-                        "skipped": "0",
-                        "time": "0"
+                        "name": suite_key, "tests": "0", "failures": "0", "errors": "0", "skipped": "0", "time": "0"
                     })
                     self.suite_map[suite_key] = suite
                 suite = self.suite_map[suite_key]
 
                 testcase = ET.SubElement(suite, "testcase", {
-                    "name": record.getMessage(),
-                    "classname": record.module if hasattr(record, "module") else record.name,
-                    "time": "0"
+                    "name": record.getMessage(), "classname": record.module if hasattr(record, "module") else record.name, "time": "0"
                 })
 
                 if record.levelno >= logging.ERROR:
@@ -90,16 +88,10 @@ class JUnitHandler(logging.Handler):
                     if record.exc_info and record.exc_info[0] is not None:
                         failure_type = record.exc_info[0].__name__
                     failure = ET.SubElement(testcase, "failure", {
-                        "message": record.getMessage(),
-                        "type": failure_type
-                    })
+                                            "message": record.getMessage(), "type": failure_type})
                     if record.exc_info:
-                        if self.formatter:
-                            failure.text = self.formatter.formatException(
-                                record.exc_info)
-                        else:
-                            failure.text = logging.Formatter().formatException(
-                                record.exc_info)
+                        failure.text = self.formatter.formatException(
+                            record.exc_info)
                     suite.attrib["failures"] = str(
                         int(suite.attrib["failures"]) + 1)
                 elif record.levelno == logging.WARNING:
@@ -110,56 +102,71 @@ class JUnitHandler(logging.Handler):
 
                 if len(self.buffer) >= self.buffer_size:
                     self.flush()
+            finally:
+                self.lock.release()
         except Exception as e:
-            self.handleError(record)
-            print(f"Logging error: {e}", file=sys.stderr)
+            print(
+                f"JUnitHandler emit error for {self.filename}: {e}", file=sys.stderr)
 
     def flush(self) -> None:
-        if self.lock is None:
-            raise RuntimeError("Lock not initialized")
-        with self.lock:
-            if self.testsuites:
-                elapsed = (datetime.now() - self.start_time).total_seconds()
-                for suite in self.testsuites:
-                    suite.attrib["time"] = str(elapsed / len(self.testsuites))
-                tree = ET.ElementTree(self.testsuites)
-                ET.indent(tree, space="  ")
-                tree.write(self.filename, encoding="utf-8",
-                           xml_declaration=True)
-                self.buffer.clear()
+        if not self.lock.acquire(timeout=2):
+            print(
+                f"Failed to acquire lock for flush in {self.filename}", file=sys.stderr)
+            return
+        try:
+            if len(self.buffer) > 0:
+                try:
+                    elapsed = (datetime.now() -
+                               self.start_time).total_seconds()
+                    for suite in self.testsuites:
+                        suite.attrib["time"] = str(
+                            elapsed / len(self.testsuites))
+                    tree = ET.ElementTree(self.testsuites)
+                    ET.indent(tree, space="  ")
+                    tree.write(self.filename, encoding="utf-8",
+                               xml_declaration=True)
+                    self.buffer.clear()
+                except Exception as e:
+                    print(
+                        f"JUnitHandler flush error for {self.filename}: {e}", file=sys.stderr)
+        finally:
+            self.lock.release()
 
     def close(self) -> None:
-        self.flush()
+        try:
+            self.flush()
+        except Exception as e:
+            print(
+                f"JUnitHandler close error for {self.filename}: {e}", file=sys.stderr)
         super().close()
 
 
-# Global listener and JUnit handler
-junit_handler = None
+# Global listeners and JUnit handlers
+user_junit_handler = None
+internal_junit_handler = None
 internal_listener = None
 
 
 def initialize_handlers():
-    global config, junit_handler, internal_listener
-    config = config_handler.load()  # Reload config
+    global config, user_junit_handler, internal_junit_handler, internal_listener
+    config = config_handler.load()
 
-    # Set log levels dynamically from config
     log_level = getattr(logging, config.log_level.upper(), logging.INFO)
     user_logger.setLevel(log_level)
     user_console_handler.setLevel(log_level)
-    internal_logger.setLevel(log_level)  # Update internal logger too
+    internal_logger.setLevel(log_level)
     internal_console_handler.setLevel(log_level)
 
     project_path = config.project_path or Path.home() / ".optics"
     log_dir = Path(project_path) / "execution_output"
     log_dir.mkdir(parents=True, exist_ok=True)
 
-    # Stop and clear existing internal_listener if it exists
     if internal_listener:
         internal_listener.stop()
+
     internal_listener = QueueListener(
         internal_log_queue, internal_console_handler, respect_handler_level=True)
 
-    # File Handler
     if config.file_log:
         log_path = Path(config.log_path or log_dir /
                         "internal_logs.log").expanduser()
@@ -169,24 +176,30 @@ def initialize_handlers():
             "%(levelname)s | %(asctime)s | %(name)s:%(funcName)s:%(lineno)d | %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S"
         ))
-        file_handler.setLevel(log_level)  # Use dynamic log level
+        file_handler.setLevel(log_level)
         internal_listener.handlers += (file_handler,)
 
-    # JUnit Handler
     if config.json_log:
-        global junit_handler
-        junit_path = Path(config.json_path or log_dir /
-                          "test_results.xml").expanduser()
-        if junit_handler:
-            junit_handler.close()
+        global user_junit_handler, internal_junit_handler
+        user_junit_path = log_dir / "user_test_results.xml"
+        internal_junit_path = log_dir / "internal_test_results.xml"
+
+        if user_junit_handler:
+            user_junit_handler.close()
             user_logger.handlers = [
                 h for h in user_logger.handlers if not isinstance(h, JUnitHandler)]
+        user_junit_handler = JUnitHandler(user_junit_path, buffer_size=100)
+        user_junit_handler.setLevel(log_level)
+        user_logger.addHandler(user_junit_handler)
+
+        if internal_junit_handler:
+            internal_junit_handler.close()
             internal_logger.handlers = [
                 h for h in internal_logger.handlers if not isinstance(h, JUnitHandler)]
-        junit_handler = JUnitHandler(junit_path, buffer_size=100)
-        junit_handler.setLevel(log_level)  # Use dynamic log level
-        internal_listener.handlers += (junit_handler,)
-        user_logger.addHandler(junit_handler)
+        internal_junit_handler = JUnitHandler(
+            internal_junit_path, buffer_size=100)
+        internal_junit_handler.setLevel(log_level)
+        internal_listener.handlers += (internal_junit_handler,)
 
     internal_listener.start()
 
@@ -197,13 +210,44 @@ initialize_handlers()
 
 
 def shutdown_logging():
-    internal_logger.debug("Shutting down logging system")
-    user_listener.stop()
-    if internal_listener:
-        internal_listener.stop()
-    for handler in internal_logger.handlers + user_logger.handlers:
-        if isinstance(handler, JUnitHandler):
-            handler.close()
+    try:
+        logging.getLogger().disabled = True
+
+        user_listener.stop()
+        if internal_listener:
+            internal_listener.stop()
+
+        timeout = 2.0
+        start_time = time.time()
+        while ((user_listener._thread and user_listener._thread.is_alive()) or
+               (internal_listener and internal_listener._thread and internal_listener._thread.is_alive())) and (time.time() - start_time < timeout):
+            time.sleep(0.1)
+
+        if user_listener._thread and user_listener._thread.is_alive():
+            print("Warning: user_listener thread did not terminate", file=sys.stderr)
+        if internal_listener and internal_listener._thread and internal_listener._thread.is_alive():
+            print("Warning: internal_listener thread did not terminate",
+                  file=sys.stderr)
+
+        if user_junit_handler:
+            user_junit_handler.flush()
+            user_junit_handler.close()
+        if internal_junit_handler:
+            internal_junit_handler.flush()
+            internal_junit_handler.close()
+
+        while not user_log_queue.empty():
+            try:
+                user_log_queue.get_nowait()
+            except queue.Empty:
+                break
+        while not internal_log_queue.empty():
+            try:
+                internal_log_queue.get_nowait()
+            except queue.Empty:
+                break
+    except Exception as e:
+        print(f"Shutdown error: {e}", file=sys.stderr)
 
 
 atexit.register(shutdown_logging)
@@ -212,7 +256,6 @@ atexit.register(shutdown_logging)
 
 
 def reconfigure_logging():
-    """Reinitialize handlers if config changes."""
     internal_logger.debug("Reconfiguring logging due to config change")
     initialize_handlers()
 
