@@ -253,7 +253,7 @@ def initialize_handlers():
     global config, user_junit_handler, internal_junit_handler, internal_listener
     config = config_handler.load()
 
-    log_level = logging.DEBUG
+    log_level = logging.INFO
     user_logger.setLevel(log_level)
     user_console_handler.setLevel(log_level)
     internal_logger.setLevel(log_level)
