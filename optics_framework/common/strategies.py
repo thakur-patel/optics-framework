@@ -648,7 +648,7 @@ class StrategyManager:
             if self._can_strategy_assert_elements(s, element_type)
         ]
         if not applicable_strategies:
-            raise OpticsError(Code.E0201, message="No elements found.")
+            raise OpticsError(Code.E0801, message=f"No strategy was applicable for the element {elements[0]}")
 
         for idx, strategy in enumerate(applicable_strategies):
             internal_logger.debug(f"Trying strategy: {type(strategy).__name__} for elements: {elements}")
