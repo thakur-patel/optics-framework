@@ -32,7 +32,7 @@ TEXT_DRIVERS = DriverCategory(
     drivers={
         "EasyOCR": DriverPackage(name="EasyOCR", packages=["easyocr"]),
         "Pytesseract": DriverPackage(name="Pytesseract", packages=["pytesseract", "pillow"]),
-        "Google Vision": DriverPackage(name="Google Vision", packages=["google-cloud-vision"])
+        "Google-Vision": DriverPackage(name="Google Vision", packages=["google-cloud-vision"])
     }
 )
 
