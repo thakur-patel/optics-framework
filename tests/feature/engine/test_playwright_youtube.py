@@ -7,7 +7,7 @@ from optics_framework.optics import Optics
 
 PLAYWRIGHT_CONFIG_PATH = os.path.join(
     os.path.dirname(__file__),
-    "../../../optics_framework/samples/playwright/config.yaml"
+    "./config.yaml"
 )
 
 
