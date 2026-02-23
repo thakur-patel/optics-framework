@@ -97,9 +97,6 @@ class AppiumFindElement(ElementSourceInterface):
         driver = self._require_driver()
         element_type = utils.determine_element_type(element)
 
-        if index is not None and index != 0:
-            raise OpticsError(Code.E0202, message='Appium Find Element does not support locating elements using index.')
-
         if element_type == 'Image':
             return None
         elif element_type == 'XPath':
@@ -117,6 +114,14 @@ class AppiumFindElement(ElementSourceInterface):
             except Exception as e:
                 internal_logger.exception(f" element: {element}", exc_info=e)
                 raise OpticsError(Code.E0201, message=f"Element not found: {element}", cause=e) from e
+            return found_element
+        elif element_type == 'Class':
+            try:
+                found_elements = driver.find_elements(AppiumBy.CLASS_NAME, element)
+                found_element = found_elements[index]
+            except Exception as e:
+                internal_logger.exception(f" element: {element}", exc_info=e)
+                raise OpticsError(Code.E0201, message=f"Element of type {element_type} not found using: {element}", cause=e) from e
             return found_element
         return None
 
