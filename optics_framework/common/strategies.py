@@ -616,7 +616,7 @@ class StrategyManager:
         for strategy in self.locator_strategies:
             if text_only and type(strategy).__name__ == "TextElementStrategy":
                 continue
-            execution_logger.debug(f"Trying strategy: {type(strategy).__name__} for element: {element}")
+            execution_logger.debug(f"Trying strategy: {type(strategy).__name__} for element: {effective_element}")
             locate_result = self._try_strategy_locate(
                 strategy, effective_element, element_type, use_aoi, aoi_x, aoi_y, aoi_width, aoi_height, index
             )
