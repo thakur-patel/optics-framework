@@ -102,19 +102,7 @@ class AppiumPageSource(ElementSourceInterface):
             return None
         elif element_type == 'Text':
             if index is not None:
-                if element.startswith("index_") :
-                    index_part, class_name = element.split(":")
-                    element_obj = driver.find_elements(AppiumBy.CLASS_NAME, class_name)
-                    index = int(index_part.replace("index_", ""))
-                    if not element_obj:
-                        raise Exception(f"No elements found for class: {class_name}")
-                    if index >= len(element_obj):
-                        raise Exception(
-                            f"Index {index} out of range. Only {len(element_obj)} elements found."
-                        )
-                    return element_obj[index]
-                else:
-                    xpath = self.find_xpath_from_text_index(element, index)
+                xpath = self.find_xpath_from_text_index(element, index)
             else:
                 xpath = self.find_xpath_from_text(element)
             try:
