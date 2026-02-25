@@ -118,6 +118,10 @@ def _try_results_until_success(
 def with_self_healing(func: Callable) -> Callable:
     @wraps(func)
     def wrapper(self, element, *args, **kwargs):
+        # Skip self-healing if 'located' is already provided (avoids double healing)
+        if kwargs.get('located') is not None:
+            return func(self, element, *args, **kwargs)
+
         screenshot_np = self.strategy_manager.capture_screenshot()
         aoi_x, aoi_y, aoi_width, aoi_height, index, is_aoi_used = _parse_aoi_from_kwargs(kwargs)
         if is_aoi_used:
