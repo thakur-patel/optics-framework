@@ -3,8 +3,6 @@ from typing import Optional, Any, Tuple, List
 from lxml import etree  # type: ignore
 from appium.webdriver.webdriver import WebDriver
 from appium.webdriver.common.appiumby import AppiumBy
-from selenium.common import NoSuchElementException
-
 from optics_framework.common.logging_config import internal_logger, execution_logger
 from optics_framework.common import utils
 from optics_framework.common.elementsource_interface import ElementSourceInterface
@@ -81,24 +79,6 @@ class AppiumPageSource(ElementSourceInterface):
         internal_logger.error(APPIUM_NOT_INITIALISED_MSG)
         raise RuntimeError(APPIUM_NOT_INITIALISED_MSG)
 
-    def _find_by_class_index(self, driver, element: str) -> Any:
-        """Helper to handle 'index_N:class.name' patterns."""
-        try:
-            index_part, class_name = element.split(":", 1)
-            index = int(index_part.replace("index_", ""))
-        except (ValueError, IndexError) as e:
-            raise ValueError(f"Invalid index format in element string: {element}") from e
-
-        elements = driver.find_elements(AppiumBy.CLASS_NAME, class_name)
-
-        if not elements:
-            raise NoSuchElementException(f"No elements found for class: {class_name}")
-
-        if index >= len(elements):
-            raise IndexError(f"Index {index} out of range. Found {len(elements)} elements.")
-
-        return elements[index]
-
     def locate(self, element: str, index: Optional[int] = None) -> Any:
         """
         Locate a UI element on the current page using Appium.
@@ -117,45 +97,46 @@ class AppiumPageSource(ElementSourceInterface):
         driver = self._require_webdriver()
         element_type = utils.determine_element_type(element)
 
-        # 1. Handle Unsupported Types Early
         if element_type == 'Image':
             internal_logger.debug('Appium Page Source does not support finding images.')
             return None
-
-        # 2. Handle Text/Class Logic
-        if element_type == 'Text':
-            # Handle specific "index_N:class" pattern
-            if index is not None and element.startswith("index_"):
-                return self._find_by_class_index(driver, element)
-
-            # Handle standard XPath-from-text logic
-            xpath = self.find_xpath_from_text_index(element, index) if index is not None \
-                else self.find_xpath_from_text(element)
-
+        elif element_type == 'Text':
+            if index is not None:
+                if element.startswith("index_") :
+                    index_part, class_name = element.split(":")
+                    element_obj = driver.find_elements(AppiumBy.CLASS_NAME, class_name)
+                    index = int(index_part.replace("index_", ""))
+                    if not element_obj:
+                        raise Exception(f"No elements found for class: {class_name}")
+                    if index >= len(element_obj):
+                        raise Exception(
+                            f"Index {index} out of range. Only {len(element_obj)} elements found."
+                        )
+                    return element_obj[index]
+                else:
+                    xpath = self.find_xpath_from_text_index(element, index)
+            else:
+                xpath = self.find_xpath_from_text(element)
             try:
                 execution_logger.debug(f"Finding element by text: {element} with xpath: {xpath}")
-                return driver.find_element(AppiumBy.XPATH, xpath)
-            except NoSuchElementException:
-                internal_logger.exception("Element not found by text: %s", xpath)
-                return None
-            except Exception as e:
-                raise RuntimeError(f"Error finding element by text: {xpath}") from e
-
-        # 3. Handle XPath Logic
-        if element_type == 'XPath':
-            if not (self.driver and hasattr(self.driver, "ui_helper") and self.driver.ui_helper):
+                element_obj = driver.find_element(AppiumBy.XPATH, xpath)
+                return element_obj
+            except Exception:
+                internal_logger.exception("Error finding element by text: %s", xpath)
+                raise RuntimeError("Error finding element by text.")
+        elif element_type == 'XPath':
+            if self.driver is not None and hasattr(self.driver, "ui_helper") and self.driver.ui_helper is not None:
+                xpath, _ = self.driver.ui_helper.find_xpath(element)
+                try:
+                    element_obj = driver.find_element(AppiumBy.XPATH, xpath)
+                    return element_obj
+                except Exception:
+                    internal_logger.exception("Error finding element by xpath: %s", xpath)
+                    raise RuntimeError("Error finding element by xpath.")
+            else:
                 internal_logger.error(APPIUM_NOT_INITIALISED_MSG)
                 raise RuntimeError(APPIUM_NOT_INITIALISED_MSG)
-
-            xpath, _ = self.driver.ui_helper.find_xpath(element)
-            try:
-                return driver.find_element(AppiumBy.XPATH, xpath)
-            except NoSuchElementException:
-                return None
-            except Exception as e:
-                raise RuntimeError(f"Error finding element by xpath: {xpath}") from e
-
-        raise RuntimeError(f"Unknown element type: {element_type}")
+        raise RuntimeError("Unknown element type.")
 
     def get_element_bboxes(
         self, elements: List[str]
