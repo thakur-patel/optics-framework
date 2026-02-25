@@ -97,9 +97,6 @@ class AppiumFindElement(ElementSourceInterface):
         driver = self._require_driver()
         element_type = utils.determine_element_type(element)
 
-        if index is not None and index != 0:
-            raise OpticsError(Code.E0202, message='Appium Find Element does not support locating elements using index.')
-
         if element_type == 'Image':
             return None
         elif element_type == 'XPath':
@@ -110,14 +107,30 @@ class AppiumFindElement(ElementSourceInterface):
                 return found_element
             except (AttributeError, TypeError) as e:
                 internal_logger.error('Error finding element: %s', element, exc_info=True)
-                raise OpticsError(Code.E0201, message=f'Error finding element: {element}', cause=e) from e
+                raise OpticsError(Code.E0201, message=f"Element of type {element_type} not found using: {element}", cause=e) from e
         elif element_type == 'Text':
             try:
                 found_element = driver.find_element(AppiumBy.ACCESSIBILITY_ID, element)
+                return found_element
             except Exception as e:
                 internal_logger.exception(f" element: {element}", exc_info=e)
-                raise OpticsError(Code.E0201, message=f"Element not found: {element}", cause=e) from e
-            return found_element
+                raise OpticsError(Code.E0201, message=f"Element of type {element_type} not found using: {element}", cause=e) from e
+        elif element_type == 'Class':
+            try:
+                found_elements = driver.find_elements(AppiumBy.CLASS_NAME, element)
+
+                index_to_use = 0 if index is None else index
+                if not found_elements or index_to_use < 0 or index_to_use >= len(found_elements):
+                    raise OpticsError(
+                        Code.E0201,
+                        message=f"Element of type {element_type} and index {index_to_use} not found using: {element}",
+                    )
+
+                found_element = found_elements[index_to_use]
+                return found_element
+            except Exception as e:
+                internal_logger.exception(f" element: {element}", exc_info=e)
+                raise OpticsError(Code.E0201, message=f"Element of type {element_type} not found using: {element}", cause=e) from e
         return None
 
     def get_element_bboxes(

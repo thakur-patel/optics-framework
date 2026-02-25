@@ -178,8 +178,8 @@ class TextElementStrategy(LocatorStrategy):
 
     @staticmethod
     def supports(element_type: str, element_source: ElementSourceInterface) -> bool:
-        # Support both Text and CSS types since element sources handle CSS selectors
-        return element_type in ("Text", "CSS") and LocatorStrategy._is_method_implemented(element_source, "locate")
+        # Supports Text, CSS and Class types since element sources handle CSS and Class selectors too
+        return element_type in ("Text", "CSS", "Class") and LocatorStrategy._is_method_implemented(element_source, "locate")
 
 class TextDetectionStrategy(LocatorStrategy):
     """Strategy for locating text elements using text detection."""
