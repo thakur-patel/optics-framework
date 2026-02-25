@@ -1,4 +1,4 @@
-module_name,module_step,param_1,param_2,param_3
+module_name,module_step,param_1,param_2,param_3,param_4,param_5
 Launch Contact Application, Launch App
 
 Navigate to Add Contact Page, Assert Presence, ${Add_Contact_Button}
@@ -13,3 +13,8 @@ Enter Contact Details in Contact Form, Enter Text, ${Company_element}, ${Company
 Click on Save Button, Press Element, ${Save_Button}
 
 Verify Contact is Added, Assert Presence, ${Contact_Name}
+
+Check the First Contact, Press Element, ${Contact_Name_Class},index=2
+Check the First Contact, Sleep, 5
+Check the First Contact, Press Keycode, 4
+Check the First Contact, Sleep, 5

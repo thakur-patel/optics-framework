@@ -30,3 +30,4 @@ image_detection:
 log_level: INFO
 
 json_log: true
+file_log: true
