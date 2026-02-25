@@ -150,6 +150,9 @@ def determine_element_type(element):
     # Check if it looks like an ID (heuristic: no slashes, no dots, usually alphanumeric/underscores)
     if element.lower().startswith("id:"):
         return "ID"
+    # Check if the input is a class
+    if element.lower().startswith("android.") or element.lower().startswith("xcui"):
+        return "Class"
     # Check if it's a CSS selector (has brackets, starts with # or ., or contains CSS selector patterns)
     # CSS selectors can have: tag[attribute="value"], #id, .class, tag.class, etc.
     if ("[" in element and "]" in element) or element.startswith("#") or element.startswith("."):
