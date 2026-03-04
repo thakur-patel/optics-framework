@@ -651,7 +651,7 @@ class Appium(DriverInterface):
             internal_logger.debug(
                 f"Swiping from ({x_coor}, {y_coor}) to ({end_x}, {end_y})"
             )
-            driver.swipe(x_coor, y_coor, end_x, end_y, 1000)
+            driver.swipe(x_coor, y_coor, end_x, end_y, 2000)
             if event_name:
                 self.event_sdk.capture_event_with_time_input(event_name, timestamp)
         except Exception as e:
