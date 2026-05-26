@@ -580,7 +580,7 @@ class Appium(DriverInterface):
         output = ""
         try:
             internal_logger.info(f"Executing adb command: {' '.join(dumpsys_cmd)}")
-            output = subprocess.check_output(
+            output = subprocess.check_output(  # nosec - static trusted arguments, not completely a user input, command injection attack is prevented
                 dumpsys_cmd,
                 stderr=subprocess.STDOUT,
                 text=True
