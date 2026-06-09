@@ -203,16 +203,22 @@ class Verifier:
             return {"page_source": page_source, "timestamp": timestamp}
         raise ValueError("Page source capture returned None.")
 
-    def get_interactive_elements(self, filter_config: Optional[List[str]] = None) -> list:
+    def _safe_capture_screenshot_np(self) -> Optional[Any]:
+        """Capture a screenshot as a NumPy frame, returning None on failure."""
+        try:
+            return self.strategy_manager.capture_screenshot()
+        except Exception as e:
+            internal_logger.warning("Failed to capture screenshot for element bounds scaling: %s", e)
+            return None
+
+    def _collect_interactive_elements(
+        self, filter_config: Optional[List[str]], screenshot_np: Optional[Any]
+    ) -> list:
         """
-        Retrieves a list of interactive elements on the current screen.
-
-        XPath and text fields are converted to one-line, CSV-friendly form (newlines
-        as \\n, tabs as \\t, etc.) so output can be pasted into elements.csv or similar.
-
-        :param filter_config: Optional list of filter types (e.g., ["buttons", "inputs"]).
-        :type filter_config: Optional[List[str]]
-        :return: A list of interactive elements.
+        Fetch interactive elements, escape their text/xpath, and scale their bounds
+        into the screenshot's pixel space. Shared by get_interactive_elements,
+        get_screen_elements, and the workspace stream so all return consistent,
+        screenshot-aligned bounds from a single screenshot capture.
         """
         elements = self.strategy_manager.get_interactive_elements(filter_config)
         for el in elements:
@@ -221,18 +227,43 @@ class Verifier:
                     el["xpath"] = utils.escape_csv_value(str(el["xpath"]))
                 if "text" in el and el["text"] is not None:
                     el["text"] = utils.escape_csv_value(str(el["text"]))
+        # Bounds come from the page source in the driver's window coordinate space;
+        # scale them to the screenshot's pixel space so consumers can overlay them
+        # directly (no-op on Android / when sizes already match).
+        utils.scale_interactive_element_bounds(elements, self.element_source, screenshot_np)
+        return elements
+
+    def get_interactive_elements(self, filter_config: Optional[List[str]] = None) -> list:
+        """
+        Retrieves a list of interactive elements on the current screen.
+
+        XPath and text fields are converted to one-line, CSV-friendly form (newlines
+        as \\n, tabs as \\t, etc.) so output can be pasted into elements.csv or similar.
+        Element bounds are returned in the screenshot's pixel space.
+
+        :param filter_config: Optional list of filter types (e.g., ["buttons", "inputs"]).
+        :type filter_config: Optional[List[str]]
+        :return: A list of interactive elements.
+        """
+        screenshot_np = self._safe_capture_screenshot_np()
+        elements = self._collect_interactive_elements(filter_config, screenshot_np)
         utils.save_interactable_elements(elements, output_dir=self.execution_dir)
         return elements
 
     def get_screen_elements(self) -> dict:
         """
         Captures a screenshot and retrieves interactive elements for API response.
+        Bounds are scaled to the returned screenshot's pixel space using a single
+        capture shared between the image and the bounds.
 
         :return: Dict with base64-encoded screenshot and list of elements.
         """
-        base64_screenshot = self.capture_screenshot()
-        elements = self.get_interactive_elements()
-
+        screenshot_np = self._safe_capture_screenshot_np()
+        elements = self._collect_interactive_elements(None, screenshot_np)
+        utils.save_interactable_elements(elements, output_dir=self.execution_dir)
+        base64_screenshot = (
+            utils.encode_numpy_to_base64(screenshot_np) if screenshot_np is not None else ""
+        )
         return {
             "screenshot": base64_screenshot,
             "elements": elements

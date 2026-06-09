@@ -760,6 +760,84 @@ def _scale_bbox(
         return bbox
 
 
+def _resolve_source_instance(element_source: Any) -> Any:
+    """
+    Resolve the concrete element source from a possible InstanceFallback wrapper.
+
+    InstanceFallback proxies unknown attributes to callables, so reading ``.driver``
+    or ``REQUIRED_DRIVER_TYPE`` off it directly is unreliable. When the object holds
+    an ``instances`` list (the fallback wrapper), return its current/first instance;
+    otherwise return the object unchanged.
+    """
+    instances = getattr(element_source, "instances", None)
+    if isinstance(instances, list) and instances:
+        return getattr(element_source, "current_instance", None) or instances[0]
+    return element_source
+
+
+def scale_interactive_element_bounds(
+    elements: List[Any],
+    element_source: Any,
+    screenshot: Optional[np.ndarray],
+) -> List[Any]:
+    """
+    Scale the ``bounds`` of interactive-element dicts from the driver's window
+    coordinate space into the screenshot's pixel space, in place.
+
+    Returned interactive elements carry ``bounds`` ({"x1","y1","x2","y2"}) sourced
+    from the page source, which lives in the driver's window coordinate space. When
+    that space differs in resolution from the captured screenshot, a client drawing
+    the bounds over the screenshot would mis-place them. Scaling here lets the
+    framework hand back bounds already aligned to the screenshot's pixels, so API
+    consumers need no scaling of their own.
+
+    Gated to Appium element sources: their page-source/WebElement bounds and the
+    driver's window size share one coordinate system, so the ratio is meaningful.
+    Other sources (e.g. web) report window and element coordinates in unrelated
+    spaces and are left unchanged. Best-effort and non-failing: no-op when the
+    window size can't be determined, no screenshot is available, or the scale is
+    1.0 (window size already equals the screenshot resolution).
+
+    :param elements: List of element dicts; each may carry a ``bounds`` dict.
+    :param element_source: Element source (possibly an InstanceFallback wrapper).
+    :param screenshot: The captured frame whose pixel space bounds are mapped into.
+    :return: The same list, with ``bounds`` scaled where applicable.
+    """
+    if screenshot is None or not elements:
+        return elements
+    source = _resolve_source_instance(element_source)
+    if getattr(source, "REQUIRED_DRIVER_TYPE", None) != "appium":
+        return elements
+    window_size = _window_size_from_source(source)
+    if window_size is None:
+        return elements
+    win_w, win_h = window_size
+    try:
+        sh_h, sh_w = screenshot.shape[:2]
+    except (AttributeError, TypeError):
+        return elements
+    if win_w <= 0 or win_h <= 0:
+        return elements
+    scale_x = sh_w / win_w
+    scale_y = sh_h / win_h
+    for el in elements:
+        if not isinstance(el, dict):
+            continue
+        bounds = el.get("bounds")
+        if not isinstance(bounds, dict):
+            continue
+        try:
+            el["bounds"] = {
+                "x1": int(bounds["x1"] * scale_x),
+                "y1": int(bounds["y1"] * scale_y),
+                "x2": int(bounds["x2"] * scale_x),
+                "y2": int(bounds["y2"] * scale_y),
+            }
+        except (KeyError, TypeError, ValueError):
+            continue
+    return elements
+
+
 def scale_bboxes_for_screenshot(
     bboxes: List[Optional[Tuple[Tuple[int, int], Tuple[int, int]]]],
     element_source: Any,
